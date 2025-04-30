@@ -32,7 +32,7 @@ def update_sitemap(sender, instance, created, **kwargs):
         
         # 文章的URL格式为 /knowledge/{id} 或 /articles/{id}，根据实际情况调整
         loc = ET.SubElement(url_element, 'loc')
-        loc.text = f"https://heartwellness.app/articles/{instance.id}"
+        loc.text = f"https://heartwellness.app/knowledge/{instance.id}"
         
         # 添加最后修改时间
         lastmod = ET.SubElement(url_element, 'lastmod')
@@ -44,7 +44,7 @@ def update_sitemap(sender, instance, created, **kwargs):
         
         # 添加优先级
         priority = ET.SubElement(url_element, 'priority')
-        priority.text = '0.7'
+        priority.text = '0.9'
         
         # 保存更新后的站点地图
         tree.write(sitemap_path, encoding='UTF-8', xml_declaration=True)
