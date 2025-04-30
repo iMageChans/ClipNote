@@ -32,7 +32,7 @@ def update_sitemap(sender, instance, created, **kwargs):
         
         # 文章的URL格式为 /knowledge/{id} 或 /articles/{id}，根据实际情况调整
         loc = ET.SubElement(url_element, 'loc')
-        loc.text = f"https://heartwellness.app/articles/{instance.id}"
+        loc.text = f"https://heartwellness.app/articles/{instance.id}/"
         
         # 添加最后修改时间
         lastmod = ET.SubElement(url_element, 'lastmod')

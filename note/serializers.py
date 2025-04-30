@@ -29,8 +29,8 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Article
-        fields = ['id', 'title', 'content', 'images', 'keywords', 'created_at', 'updated_at']
-
+        fields = ['id', 'title', 'content', 'description', 'images', 'keywords', 'created_at', 'updated_at']
+    
     def get_description(self, obj, bs4=None):
         soup = BeautifulSoup(obj.content, 'html.parser')
         text = soup.get_text()
