@@ -50,110 +50,148 @@ def create_base_sitemap(sitemap_path):
 
 def check_and_update_sitemap():
     """
-    检查数据库中的所有文章，更新站点地图，保留原有URL，确保格式正确且没有重复项
+    检查数据库中的所有文章，确保它们都在站点地图中，并确保包含基本URL
     """
     sitemap_path = os.path.join(settings.BASE_DIR, 'sitemap-0.xml')
     
+    # 基本URL列表，这些URL应该始终存在于站点地图中
+    base_urls = [
+        "https://heartwellness.app/knowledge/basics/heart-rate-101",
+        "https://heartwellness.app/api/stories",
+        "https://heartwellness.app/knowledge/basics",
+        "https://heartwellness.app/knowledge/health/meditation-benefits",
+        "https://heartwellness.app/knowledge/basics/normal-ranges",
+        "https://heartwellness.app/knowledge/health/stress-heart",
+        "https://heartwellness.app/knowledge/lifestyle/exercise",
+        "https://heartwellness.app/knowledge",
+        "https://heartwellness.app/knowledge/lifestyle/nutrition",
+        "https://heartwellness.app/knowledge/health/exercise-stress",
+        "https://heartwellness.app/knowledge/lifestyle/sleep",
+        "https://heartwellness.app/stories",
+        "https://heartwellness.app/tools/breathing-exercise",
+        "https://heartwellness.app/tools",
+        "https://heartwellness.app",
+        "https://heartwellness.app/tools/stress-test",
+        "https://heartwellness.app/about",
+        "https://heartwellness.app/tools/heart-rate-calculator",
+        "https://heartwellness.app/knowledge/basics/high-heart-rate"
+    ]
+    
     try:
-        # 创建一个新的站点地图根元素
-        root = ET.Element('urlset')
-        root.set('xmlns', 'http://www.sitemaps.org/schemas/sitemap/0.9')
-        root.set('xmlns:news', 'http://www.google.com/schemas/sitemap-news/0.9')
-        root.set('xmlns:xhtml', 'http://www.w3.org/1999/xhtml')
-        root.set('xmlns:mobile', 'http://www.google.com/schemas/sitemap-mobile/1.0')
-        root.set('xmlns:image', 'http://www.google.com/schemas/sitemap-image/1.1')
-        root.set('xmlns:video', 'http://www.google.com/schemas/sitemap-video/1.1')
+        # 如果站点地图不存在，创建一个包含原始内容的站点地图
+        if not os.path.exists(sitemap_path):
+            create_original_sitemap(sitemap_path)
+            
+        # 解析现有的站点地图
+        tree = ET.parse(sitemap_path)
+        root = tree.getroot()
         
-        # 存储已添加的URL，用于去重
-        added_urls = set()
+        # 获取站点地图中的所有URL
+        existing_urls = set()
+        for url_element in root.findall('.//{http://www.sitemaps.org/schemas/sitemap/0.9}url'):
+            loc_element = url_element.find('.//{http://www.sitemaps.org/schemas/sitemap/0.9}loc')
+            if loc_element is not None and loc_element.text:
+                existing_urls.add(loc_element.text)
         
-        # 如果站点地图文件存在，读取现有URL
-        if os.path.exists(sitemap_path):
-            try:
-                # 解析现有的站点地图
-                tree = ET.parse(sitemap_path)
-                old_root = tree.getroot()
+        # 检查基本URL是否都存在，如果不存在则添加
+        updated = False
+        for base_url in base_urls:
+            if base_url not in existing_urls:
+                # 添加基本URL
+                url_element = ET.SubElement(root, 'url')
                 
-                # 复制现有的URL到新的站点地图
-                for url_element in old_root.findall('.//{http://www.sitemaps.org/schemas/sitemap/0.9}url'):
-                    loc_element = url_element.find('.//{http://www.sitemaps.org/schemas/sitemap/0.9}loc')
-                    if loc_element is not None and loc_element.text:
-                        url = loc_element.text
-                        
-                        # 如果URL已经添加过，跳过
-                        if url in added_urls:
-                            continue
-                        
-                        # 复制URL元素到新的站点地图
-                        new_url_element = ET.SubElement(root, 'url')
-                        
-                        # 复制loc元素
-                        new_loc = ET.SubElement(new_url_element, 'loc')
-                        new_loc.text = url
-                        added_urls.add(url)
-                        
-                        # 复制lastmod元素
-                        lastmod_element = url_element.find('.//{http://www.sitemaps.org/schemas/sitemap/0.9}lastmod')
-                        if lastmod_element is not None and lastmod_element.text:
-                            new_lastmod = ET.SubElement(new_url_element, 'lastmod')
-                            new_lastmod.text = lastmod_element.text
-                        
-                        # 复制changefreq元素
-                        changefreq_element = url_element.find('.//{http://www.sitemaps.org/schemas/sitemap/0.9}changefreq')
-                        if changefreq_element is not None and changefreq_element.text:
-                            new_changefreq = ET.SubElement(new_url_element, 'changefreq')
-                            new_changefreq.text = changefreq_element.text
-                        
-                        # 复制priority元素
-                        priority_element = url_element.find('.//{http://www.sitemaps.org/schemas/sitemap/0.9}priority')
-                        if priority_element is not None and priority_element.text:
-                            new_priority = ET.SubElement(new_url_element, 'priority')
-                            new_priority.text = priority_element.text
+                loc = ET.SubElement(url_element, 'loc')
+                loc.text = base_url
                 
-                print(f"已从现有站点地图中复制 {len(added_urls)} 个URL")
-            except Exception as e:
-                print(f"解析现有站点地图时出错: {e}")
-        
-        # 确保首页URL存在
-        if 'https://heartwellness.app' not in added_urls:
-            add_url_to_sitemap(root, 'https://heartwellness.app', priority='1.0')
-            added_urls.add('https://heartwellness.app')
+                lastmod = ET.SubElement(url_element, 'lastmod')
+                lastmod.text = "2025-03-06T10:46:41.987Z"  # 使用固定的时间戳
+                
+                changefreq = ET.SubElement(url_element, 'changefreq')
+                changefreq.text = 'daily'
+                
+                priority = ET.SubElement(url_element, 'priority')
+                priority.text = '0.7'
+                
+                updated = True
+                print(f"添加基本URL到站点地图: {base_url}")
         
         # 获取数据库中的所有文章
         Article = apps.get_model('note', 'Article')
         articles = Article.objects.all()
         
-        # 为每篇文章添加URL（如果尚未添加）
-        articles_added = 0
+        # 检查每篇文章是否在站点地图中
         for article in articles:
             article_url = f"https://heartwellness.app/knowledge/{article.id}"
-            if article_url not in added_urls:
-                add_url_to_sitemap(
-                    root, 
-                    article_url, 
-                    lastmod=article.updated_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
-                    priority='0.9'
-                )
-                added_urls.add(article_url)
-                articles_added += 1
+            if article_url not in existing_urls:
+                # 如果文章不在站点地图中，添加它
+                url_element = ET.SubElement(root, 'url')
+                
+                loc = ET.SubElement(url_element, 'loc')
+                loc.text = article_url
+                
+                lastmod = ET.SubElement(url_element, 'lastmod')
+                lastmod.text = article.updated_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                
+                changefreq = ET.SubElement(url_element, 'changefreq')
+                changefreq.text = 'daily'
+                
+                priority = ET.SubElement(url_element, 'priority')
+                priority.text = '0.9'
+                
+                updated = True
+                print(f"添加文章到站点地图: {article_url}")
         
-        print(f"已添加 {articles_added} 篇新文章到站点地图")
-        
-        # 创建XML树并保存
-        tree = ET.ElementTree(root)
-        
-        # 使用minidom来格式化XML，使其具有正确的缩进和换行
-        from xml.dom import minidom
-        xmlstr = minidom.parseString(ET.tostring(root)).toprettyxml(indent="  ")
-        
-        # 写入文件
-        with open(sitemap_path, 'w', encoding='UTF-8') as f:
-            f.write(xmlstr)
+        # 如果有更新，保存站点地图
+        if updated:
+            # 使用minidom来格式化XML，使其具有正确的缩进和换行
+            from xml.dom import minidom
+            xmlstr = minidom.parseString(ET.tostring(root)).toprettyxml(indent="  ")
             
-        print(f"站点地图已更新，共包含 {len(added_urls)} 个URL")
+            # 写入文件
+            with open(sitemap_path, 'w', encoding='UTF-8') as f:
+                f.write(xmlstr)
+            
+            print("站点地图已更新")
+        else:
+            print("站点地图已是最新")
             
     except Exception as e:
-        print(f"更新站点地图时出错: {e}")
+        print(f"检查站点地图时出错: {e}")
+        # 如果出错，确保创建一个包含原始内容的站点地图
+        create_original_sitemap(sitemap_path)
+        print("由于错误，已重新创建原始站点地图")
+
+def create_original_sitemap(sitemap_path):
+    """
+    创建包含原始内容的站点地图文件
+    """
+    original_content = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+<url><loc>https://heartwellness.app/knowledge/basics/heart-rate-101</loc><lastmod>2025-03-06T10:46:41.986Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/api/stories</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/basics</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/health/meditation-benefits</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/basics/normal-ranges</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/health/stress-heart</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/lifestyle/exercise</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/lifestyle/nutrition</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/health/exercise-stress</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/lifestyle/sleep</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/stories</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/tools/breathing-exercise</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/tools</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/tools/stress-test</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/about</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/tools/heart-rate-calculator</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/basics/high-heart-rate</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+</urlset>"""
+    
+    with open(sitemap_path, 'w', encoding='UTF-8') as f:
+        f.write(original_content)
+    
+    print("已创建包含原始内容的站点地图文件")
 
 def add_url_to_sitemap(root, url, lastmod=None, changefreq='daily', priority='0.7'):
     """
