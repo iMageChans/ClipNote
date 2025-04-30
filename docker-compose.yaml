@@ -18,8 +18,9 @@ services:
     command: >
       sh -c "python manage.py migrate &&
              python manage.py collectstatic --noinput &&
+             python manage.py update_sitemap &&
              gunicorn --bind 0.0.0.0:8000 --workers 3 --reload --timeout 120 ClipNote.wsgi:application"
 
 volumes:
   static_volume:
-  media_volume: 
+  media_volume:

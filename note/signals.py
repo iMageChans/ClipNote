@@ -97,7 +97,7 @@ def create_base_sitemap(sitemap_path):
 
 def check_and_update_sitemap():
     """
-    检查数据库中的所有文章，确保它们都在站点地图中，并移除重复项
+    检查数据库中的所有文章，确保它们都在站点地图中，并移除重复项和不一致的URL格式
     """
     sitemap_path = os.path.join(settings.BASE_DIR, 'sitemap-0.xml')
     
@@ -112,14 +112,31 @@ def check_and_update_sitemap():
         
         # 获取站点地图中的所有URL及其元素
         existing_urls = {}
+        urls_to_remove = []
+        
         for url_element in root.findall('{http://www.sitemaps.org/schemas/sitemap/0.9}url'):
             loc_element = url_element.find('{http://www.sitemaps.org/schemas/sitemap/0.9}loc')
             if loc_element is not None and loc_element.text:
-                if loc_element.text in existing_urls:
-                    # 如果URL已存在，标记为重复
-                    existing_urls[loc_element.text].append(url_element)
+                url = loc_element.text
+                
+                # 检查是否是文章URL
+                if '/articles/' in url or '/knowledge/' in url:
+                    # 提取文章ID
+                    article_id = url.split('/')[-1]
+                    
+                    # 标准化URL格式为 /knowledge/{id}
+                    standard_url = f"https://heartwellness.app/knowledge/{article_id}"
+                    
+                    # 如果URL不是标准格式，标记为需要移除
+                    if url != standard_url:
+                        urls_to_remove.append((url_element, standard_url))
+                        continue
+                
+                # 处理重复URL
+                if url in existing_urls:
+                    existing_urls[url].append(url_element)
                 else:
-                    existing_urls[loc_element.text] = [url_element]
+                    existing_urls[url] = [url_element]
         
         # 移除重复的URL元素
         updated = False
@@ -131,22 +148,46 @@ def check_and_update_sitemap():
                 updated = True
                 print(f"移除重复URL: {url}")
         
+        # 移除非标准格式的URL，并添加标准格式
+        for element, standard_url in urls_to_remove:
+            root.remove(element)
+            
+            # 检查标准URL是否已存在
+            if standard_url not in existing_urls:
+                # 添加标准格式的URL
+                url_element = ET.SubElement(root, 'url')
+                
+                loc = ET.SubElement(url_element, 'loc')
+                loc.text = standard_url
+                
+                lastmod = ET.SubElement(url_element, 'lastmod')
+                lastmod.text = datetime.now(pytz.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                
+                changefreq = ET.SubElement(url_element, 'changefreq')
+                changefreq.text = 'daily'
+                
+                priority = ET.SubElement(url_element, 'priority')
+                priority.text = '0.9'
+                
+                existing_urls[standard_url] = [url_element]
+                updated = True
+                print(f"替换URL格式: {standard_url}")
+        
         # 获取数据库中的所有文章
         Article = apps.get_model('note', 'Article')
         articles = Article.objects.all()
         
         # 检查每篇文章是否在站点地图中
         for article in articles:
-            # 检查两种可能的URL格式
-            knowledge_url = f"https://heartwellness.app/knowledge/{article.id}"
-            articles_url = f"https://heartwellness.app/articles/{article.id}"
+            # 使用标准URL格式
+            standard_url = f"https://heartwellness.app/knowledge/{article.id}"
             
-            if knowledge_url not in existing_urls and articles_url not in existing_urls:
+            if standard_url not in existing_urls:
                 # 如果文章不在站点地图中，添加它
                 url_element = ET.SubElement(root, 'url')
                 
                 loc = ET.SubElement(url_element, 'loc')
-                loc.text = knowledge_url  # 使用knowledge路径
+                loc.text = standard_url
                 
                 lastmod = ET.SubElement(url_element, 'lastmod')
                 lastmod.text = article.updated_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
@@ -158,7 +199,7 @@ def check_and_update_sitemap():
                 priority.text = '0.9'
                 
                 updated = True
-                print(f"添加文章到站点地图: {knowledge_url}")
+                print(f"添加文章到站点地图: {standard_url}")
         
         # 如果有更新，保存站点地图
         if updated:
