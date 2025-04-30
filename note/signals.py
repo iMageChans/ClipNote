@@ -50,12 +50,12 @@ def create_base_sitemap(sitemap_path):
 
 def check_and_update_sitemap():
     """
-    检查数据库中的所有文章，重建站点地图，确保格式正确且没有重复项
+    检查数据库中的所有文章，更新站点地图，保留原有URL，确保格式正确且没有重复项
     """
     sitemap_path = os.path.join(settings.BASE_DIR, 'sitemap-0.xml')
     
     try:
-        # 创建一个全新的站点地图
+        # 创建一个新的站点地图根元素
         root = ET.Element('urlset')
         root.set('xmlns', 'http://www.sitemaps.org/schemas/sitemap/0.9')
         root.set('xmlns:news', 'http://www.google.com/schemas/sitemap-news/0.9')
@@ -64,34 +64,80 @@ def check_and_update_sitemap():
         root.set('xmlns:image', 'http://www.google.com/schemas/sitemap-image/1.1')
         root.set('xmlns:video', 'http://www.google.com/schemas/sitemap-video/1.1')
         
-        # 添加首页URL
-        add_url_to_sitemap(root, 'https://heartwellness.app', priority='1.0')
+        # 存储已添加的URL，用于去重
+        added_urls = set()
         
-        # 添加其他重要页面
-        important_urls = [
-            'https://heartwellness.app/knowledge',
-            'https://heartwellness.app/tools',
-            'https://heartwellness.app/about',
-            'https://heartwellness.app/stories',
-        ]
+        # 如果站点地图文件存在，读取现有URL
+        if os.path.exists(sitemap_path):
+            try:
+                # 解析现有的站点地图
+                tree = ET.parse(sitemap_path)
+                old_root = tree.getroot()
+                
+                # 复制现有的URL到新的站点地图
+                for url_element in old_root.findall('.//{http://www.sitemaps.org/schemas/sitemap/0.9}url'):
+                    loc_element = url_element.find('.//{http://www.sitemaps.org/schemas/sitemap/0.9}loc')
+                    if loc_element is not None and loc_element.text:
+                        url = loc_element.text
+                        
+                        # 如果URL已经添加过，跳过
+                        if url in added_urls:
+                            continue
+                        
+                        # 复制URL元素到新的站点地图
+                        new_url_element = ET.SubElement(root, 'url')
+                        
+                        # 复制loc元素
+                        new_loc = ET.SubElement(new_url_element, 'loc')
+                        new_loc.text = url
+                        added_urls.add(url)
+                        
+                        # 复制lastmod元素
+                        lastmod_element = url_element.find('.//{http://www.sitemaps.org/schemas/sitemap/0.9}lastmod')
+                        if lastmod_element is not None and lastmod_element.text:
+                            new_lastmod = ET.SubElement(new_url_element, 'lastmod')
+                            new_lastmod.text = lastmod_element.text
+                        
+                        # 复制changefreq元素
+                        changefreq_element = url_element.find('.//{http://www.sitemaps.org/schemas/sitemap/0.9}changefreq')
+                        if changefreq_element is not None and changefreq_element.text:
+                            new_changefreq = ET.SubElement(new_url_element, 'changefreq')
+                            new_changefreq.text = changefreq_element.text
+                        
+                        # 复制priority元素
+                        priority_element = url_element.find('.//{http://www.sitemaps.org/schemas/sitemap/0.9}priority')
+                        if priority_element is not None and priority_element.text:
+                            new_priority = ET.SubElement(new_url_element, 'priority')
+                            new_priority.text = priority_element.text
+                
+                print(f"已从现有站点地图中复制 {len(added_urls)} 个URL")
+            except Exception as e:
+                print(f"解析现有站点地图时出错: {e}")
         
-        for url in important_urls:
-            add_url_to_sitemap(root, url, priority='0.8')
+        # 确保首页URL存在
+        if 'https://heartwellness.app' not in added_urls:
+            add_url_to_sitemap(root, 'https://heartwellness.app', priority='1.0')
+            added_urls.add('https://heartwellness.app')
         
         # 获取数据库中的所有文章
         Article = apps.get_model('note', 'Article')
         articles = Article.objects.all()
         
-        # 为每篇文章添加URL
+        # 为每篇文章添加URL（如果尚未添加）
+        articles_added = 0
         for article in articles:
             article_url = f"https://heartwellness.app/knowledge/{article.id}"
-            add_url_to_sitemap(
-                root, 
-                article_url, 
-                lastmod=article.updated_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
-                priority='0.9'
-            )
-            print(f"添加文章到站点地图: {article_url}")
+            if article_url not in added_urls:
+                add_url_to_sitemap(
+                    root, 
+                    article_url, 
+                    lastmod=article.updated_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
+                    priority='0.9'
+                )
+                added_urls.add(article_url)
+                articles_added += 1
+        
+        print(f"已添加 {articles_added} 篇新文章到站点地图")
         
         # 创建XML树并保存
         tree = ET.ElementTree(root)
@@ -104,10 +150,10 @@ def check_and_update_sitemap():
         with open(sitemap_path, 'w', encoding='UTF-8') as f:
             f.write(xmlstr)
             
-        print("站点地图已重建并格式化")
+        print(f"站点地图已更新，共包含 {len(added_urls)} 个URL")
             
     except Exception as e:
-        print(f"重建站点地图时出错: {e}")
+        print(f"更新站点地图时出错: {e}")
 
 def add_url_to_sitemap(root, url, lastmod=None, changefreq='daily', priority='0.7'):
     """
