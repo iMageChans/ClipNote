@@ -60,5 +60,3 @@ class ImageUploadView(APIView):
             image_urls.append(image_url)
         
         return Response({"urls": image_urls}, status=status.HTTP_201_CREATED)
-
-# Create your views here.

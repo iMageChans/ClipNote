@@ -154,3 +154,12 @@ SITE_URL = 'https://heartwellness.app'  # 网站的实际URL
 # 媒体文件配置
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# CSRF 配置
+CSRF_TRUSTED_ORIGINS = ['https://heartwellness.app']
+
+# 如果您使用了 CORS，也需要确保配置正确
+CORS_ALLOWED_ORIGINS = [
+    'https://heartwellness.app',
+]
+CORS_ALLOW_CREDENTIALS = True
