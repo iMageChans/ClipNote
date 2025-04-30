@@ -6,6 +6,7 @@ from django.conf import settings
 import xml.etree.ElementTree as ET
 from datetime import datetime
 import pytz
+from django.apps import apps
 
 @receiver(post_save, sender=Article)
 def update_sitemap(sender, instance, created, **kwargs):
@@ -79,4 +80,63 @@ def create_base_sitemap(sitemap_path):
     tree = ET.ElementTree(root)
     
     # 保存到文件
-    tree.write(sitemap_path, encoding='UTF-8', xml_declaration=True) 
+    tree.write(sitemap_path, encoding='UTF-8', xml_declaration=True)
+
+def check_and_update_sitemap():
+    """
+    检查数据库中的所有文章，确保它们都在站点地图中
+    """
+    sitemap_path = os.path.join(settings.BASE_DIR, 'sitemap-0.xml')
+    
+    # 如果站点地图不存在，创建一个基本的
+    if not os.path.exists(sitemap_path):
+        create_base_sitemap(sitemap_path)
+        
+    try:
+        # 解析现有的站点地图
+        tree = ET.parse(sitemap_path)
+        root = tree.getroot()
+        
+        # 获取站点地图中的所有URL
+        existing_urls = set()
+        for url_element in root.findall('{http://www.sitemaps.org/schemas/sitemap/0.9}url'):
+            loc_element = url_element.find('{http://www.sitemaps.org/schemas/sitemap/0.9}loc')
+            if loc_element is not None and loc_element.text:
+                existing_urls.add(loc_element.text)
+        
+        # 获取数据库中的所有文章
+        Article = apps.get_model('note', 'Article')
+        articles = Article.objects.all()
+        
+        # 检查每篇文章是否在站点地图中
+        updated = False
+        for article in articles:
+            article_url = f"https://heartwellness.app/knowledge/{article.id}"
+            if article_url not in existing_urls:
+                # 如果文章不在站点地图中，添加它
+                url_element = ET.SubElement(root, 'url')
+                
+                loc = ET.SubElement(url_element, 'loc')
+                loc.text = article_url
+                
+                lastmod = ET.SubElement(url_element, 'lastmod')
+                lastmod.text = article.updated_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                
+                changefreq = ET.SubElement(url_element, 'changefreq')
+                changefreq.text = 'daily'
+                
+                priority = ET.SubElement(url_element, 'priority')
+                priority.text = '0.9'
+                
+                updated = True
+                print(f"添加文章到站点地图: {article_url}")
+        
+        # 如果有更新，保存站点地图
+        if updated:
+            tree.write(sitemap_path, encoding='UTF-8', xml_declaration=True)
+            print("站点地图已更新")
+        else:
+            print("站点地图已是最新")
+            
+    except Exception as e:
+        print(f"检查站点地图时出错: {e}") 
