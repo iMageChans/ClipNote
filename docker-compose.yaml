@@ -7,17 +7,18 @@ services:
     restart: always
     volumes:
       - .:/app
-      - static_volume:/app/static
-      - media_volume:/app/media
+      - /www/ClipNote/static:/app/static
+      - /www/ClipNote/media:/app/media
       - ./db.sqlite3:/app/db.sqlite3
     ports:
       - "8000:8000"
     environment:
       - DEBUG=True
+      - DJANGO_SETTINGS_MODULE=ClipNote.settings
     command: >
       sh -c "python manage.py migrate &&
              python manage.py collectstatic --noinput &&
-             gunicorn --bind 0.0.0.0:8000 --workers 3 --reload ClipNote.wsgi:application"
+             gunicorn --bind 0.0.0.0:8000 --workers 3 --reload --timeout 120 ClipNote.wsgi:application"
 
 volumes:
   static_volume:
