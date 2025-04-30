@@ -1,0 +1,24 @@
+version: '3'
+
+services:
+  web:
+    build: .
+    container_name: clipnote_web
+    restart: always
+    volumes:
+      - .:/app
+      - static_volume:/app/static
+      - media_volume:/app/media
+      - ./db.sqlite3:/app/db.sqlite3
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn --bind 0.0.0.0:8000 --workers 3 --reload ClipNote.wsgi:application"
+
+volumes:
+  static_volume:
+  media_volume: 
