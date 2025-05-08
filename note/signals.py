@@ -50,106 +50,52 @@ def create_base_sitemap(sitemap_path):
 
 def check_and_update_sitemap():
     """
-    检查数据库中的所有文章，确保它们都在站点地图中，并确保包含基本URL
+    检查数据库中的所有文章，确保它们都在站点地图中，使用纯文本处理
     """
     sitemap_path = os.path.join(settings.BASE_DIR, 'sitemap-0.xml')
     
-    # 基本URL列表，这些URL应该始终存在于站点地图中
-    base_urls = [
-        "https://heartwellness.app/knowledge/basics/heart-rate-101",
-        "https://heartwellness.app/api/stories",
-        "https://heartwellness.app/knowledge/basics",
-        "https://heartwellness.app/knowledge/health/meditation-benefits",
-        "https://heartwellness.app/knowledge/basics/normal-ranges",
-        "https://heartwellness.app/knowledge/health/stress-heart",
-        "https://heartwellness.app/knowledge/lifestyle/exercise",
-        "https://heartwellness.app/knowledge",
-        "https://heartwellness.app/knowledge/lifestyle/nutrition",
-        "https://heartwellness.app/knowledge/health/exercise-stress",
-        "https://heartwellness.app/knowledge/lifestyle/sleep",
-        "https://heartwellness.app/stories",
-        "https://heartwellness.app/tools/breathing-exercise",
-        "https://heartwellness.app/tools",
-        "https://heartwellness.app",
-        "https://heartwellness.app/tools/stress-test",
-        "https://heartwellness.app/about",
-        "https://heartwellness.app/tools/heart-rate-calculator",
-        "https://heartwellness.app/knowledge/basics/high-heart-rate"
-    ]
+    # 如果站点地图不存在，创建一个包含原始内容的站点地图
+    if not os.path.exists(sitemap_path):
+        create_original_sitemap(sitemap_path)
+        return
     
     try:
-        # 如果站点地图不存在，创建一个包含原始内容的站点地图
-        if not os.path.exists(sitemap_path):
-            create_original_sitemap(sitemap_path)
-            
-        # 解析现有的站点地图
-        tree = ET.parse(sitemap_path)
-        root = tree.getroot()
+        # 读取现有的站点地图文件内容
+        with open(sitemap_path, 'r', encoding='UTF-8') as f:
+            content = f.read()
         
-        # 获取站点地图中的所有URL
-        existing_urls = set()
-        for url_element in root.findall('.//{http://www.sitemaps.org/schemas/sitemap/0.9}url'):
-            loc_element = url_element.find('.//{http://www.sitemaps.org/schemas/sitemap/0.9}loc')
-            if loc_element is not None and loc_element.text:
-                existing_urls.add(loc_element.text)
-        
-        # 检查基本URL是否都存在，如果不存在则添加
-        updated = False
-        for base_url in base_urls:
-            if base_url not in existing_urls:
-                # 添加基本URL
-                url_element = ET.SubElement(root, 'url')
-                
-                loc = ET.SubElement(url_element, 'loc')
-                loc.text = base_url
-                
-                lastmod = ET.SubElement(url_element, 'lastmod')
-                lastmod.text = "2025-03-06T10:46:41.987Z"  # 使用固定的时间戳
-                
-                changefreq = ET.SubElement(url_element, 'changefreq')
-                changefreq.text = 'daily'
-                
-                priority = ET.SubElement(url_element, 'priority')
-                priority.text = '0.7'
-                
-                updated = True
-                print(f"添加基本URL到站点地图: {base_url}")
+        # 提取所有URL
+        import re
+        url_pattern = r'<loc>(.*?)</loc>'
+        existing_urls = set(re.findall(url_pattern, content))
         
         # 获取数据库中的所有文章
         Article = apps.get_model('note', 'Article')
         articles = Article.objects.all()
         
         # 检查每篇文章是否在站点地图中
+        new_urls = []
         for article in articles:
             article_url = f"https://heartwellness.app/knowledge/{article.id}"
             if article_url not in existing_urls:
-                # 如果文章不在站点地图中，添加它
-                url_element = ET.SubElement(root, 'url')
-                
-                loc = ET.SubElement(url_element, 'loc')
-                loc.text = article_url
-                
-                lastmod = ET.SubElement(url_element, 'lastmod')
-                lastmod.text = article.updated_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-                
-                changefreq = ET.SubElement(url_element, 'changefreq')
-                changefreq.text = 'daily'
-                
-                priority = ET.SubElement(url_element, 'priority')
-                priority.text = '0.9'
-                
-                updated = True
+                # 如果文章不在站点地图中，准备添加它
+                new_url = f"""<url>
+<loc>{article_url}</loc>
+<lastmod>{article.updated_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.9</priority>
+</url>"""
+                new_urls.append(new_url)
                 print(f"添加文章到站点地图: {article_url}")
         
-        # 如果有更新，保存站点地图
-        if updated:
-            # 使用minidom来格式化XML，使其具有正确的缩进和换行
-            from xml.dom import minidom
-            xmlstr = minidom.parseString(ET.tostring(root)).toprettyxml(indent="  ")
+        # 如果有新URL要添加
+        if new_urls:
+            # 在</urlset>前插入新URL
+            updated_content = content.replace('</urlset>', '\n'.join(new_urls) + '\n</urlset>')
             
-            # 写入文件
+            # 保存更新后的站点地图
             with open(sitemap_path, 'w', encoding='UTF-8') as f:
-                f.write(xmlstr)
+                f.write(updated_content)
             
             print("站点地图已更新")
         else:
@@ -157,9 +103,7 @@ def check_and_update_sitemap():
             
     except Exception as e:
         print(f"检查站点地图时出错: {e}")
-        # 如果出错，确保创建一个包含原始内容的站点地图
-        create_original_sitemap(sitemap_path)
-        print("由于错误，已重新创建原始站点地图")
+        print("由于错误，站点地图未更新")
 
 def create_original_sitemap(sitemap_path):
     """
