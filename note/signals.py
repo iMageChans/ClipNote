@@ -84,34 +84,45 @@ def check_and_update_sitemap(rebuild=False):
     检查数据库中的所有文章，确保它们都在站点地图中
     
     参数:
-    rebuild -- 如果为True，则完全重建站点地图，而不是仅添加缺失的文章
+    rebuild -- 如果为True，则更新所有文章的URL，而不是仅添加缺失的文章
     """
     sitemap_path = os.path.join(settings.BASE_DIR, 'sitemap-0.xml')
     
     # 如果站点地图不存在，创建一个包含原始内容的站点地图
-    if not os.path.exists(sitemap_path) or rebuild:
-        # 如果需要重建，则先使用基本结构创建一个新的站点地图
-        if rebuild:
-            create_base_sitemap(sitemap_path)
-        else:
-            create_original_sitemap(sitemap_path)
-        
-        # 如果是重建，则需要继续添加所有文章；否则直接返回
-        if not rebuild:
-            return
+    if not os.path.exists(sitemap_path):
+        create_original_sitemap(sitemap_path)
+        return
     
     try:
-        # 如果是重建，则使用已经创建的基本站点地图
+        # 读取现有的站点地图文件内容
+        with open(sitemap_path, 'r', encoding='UTF-8') as f:
+            content = f.read()
+        
+        # 如果是重建模式，我们需要保留所有非文章URL，但更新所有文章URL
         if rebuild:
-            # 解析站点地图XML
-            tree = ET.parse(sitemap_path)
-            root = tree.getroot()
+            # 提取所有URL
+            import re
+            url_pattern = r'<loc>(.*?)</loc>'
+            all_urls = re.findall(url_pattern, content)
+            
+            # 获取非文章URL（不包含/knowledge/后跟数字）
+            non_article_urls = []
+            article_urls_pattern = r'<url>[\s\S]*?<loc>https://heartwellness\.app/knowledge/\d+</loc>[\s\S]*?</url>'
+            article_entries = re.findall(article_urls_pattern, content)
+            
+            # 从内容中移除所有文章URL
+            for entry in article_entries:
+                content = content.replace(entry, '')
+            
+            # 移除可能的连续空行
+            content = re.sub(r'\n\s*\n', '\n', content)
             
             # 获取数据库中的所有文章
             Article = apps.get_model('note', 'Article')
             articles = Article.objects.all()
             
-            # 添加每篇文章到站点地图
+            # 生成所有文章的新URL
+            new_urls = []
             for article in articles:
                 # 优先使用关键词，然后是 slug，最后是 ID 构建 URL
                 keywords = article.get_keywords()
@@ -127,26 +138,27 @@ def check_and_update_sitemap(rebuild=False):
                 # 使用正确的前端 URL 格式
                 article_url = f"https://heartwellness.app/knowledge/{article_identifier}"
                 
-                # 添加文章到站点地图
-                add_url_to_sitemap(
-                    root, 
-                    article_url, 
-                    lastmod=article.updated_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
-                    changefreq='daily',
-                    priority='0.9'
-                )
+                # 如果文章不在站点地图中，准备添加它
+                new_url = f"""<url>
+<loc>{article_url}</loc>
+<lastmod>{article.updated_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.9</priority>
+</url>"""
+                new_urls.append(new_url)
                 print(f"添加文章到站点地图: {article_url}")
             
-            # 保存站点地图
-            tree.write(sitemap_path, encoding='UTF-8', xml_declaration=True)
+            # 在</urlset>前插入新URL
+            updated_content = content.replace('</urlset>', '\n'.join(new_urls) + '\n</urlset>')
+            
+            # 保存更新后的站点地图
+            with open(sitemap_path, 'w', encoding='UTF-8') as f:
+                f.write(updated_content)
+            
             print("站点地图已完全重建")
             return
-            
-        # 如果不是重建，则使用之前的逻辑增量更新
-        # 读取现有的站点地图文件内容
-        with open(sitemap_path, 'r', encoding='UTF-8') as f:
-            content = f.read()
         
+        # 如果不是重建模式，则使用之前的增量更新逻辑
         # 提取所有URL
         import re
         url_pattern = r'<loc>(.*?)</loc>'
