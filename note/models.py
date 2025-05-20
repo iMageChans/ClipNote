@@ -1,10 +1,12 @@
 from django.db import models
 from ckeditor.fields import RichTextField
 import json
+from django.utils.text import slugify
 
 class Article(models.Model):
     title = models.CharField('标题', max_length=200)
     content = RichTextField('内容')
+    slug = models.SlugField('URL别名', max_length=255, unique=True, blank=True)
     images = models.TextField('预览图', blank=True, default='[]')
     keywords = models.TextField('关键词', blank=True, default='[]')
     created_at = models.DateTimeField('创建时间', auto_now_add=True)
@@ -12,6 +14,20 @@ class Article(models.Model):
 
     def __str__(self):
         return self.title
+
+    def save(self, *args, **kwargs):
+        # 如果没有提供 slug，则根据标题自动生成
+        if not self.slug:
+            self.slug = slugify(self.title)
+            
+            # 确保 slug 唯一
+            original_slug = self.slug
+            counter = 1
+            while Article.objects.filter(slug=self.slug).exclude(id=self.id).exists():
+                self.slug = f"{original_slug}-{counter}"
+                counter += 1
+                
+        super().save(*args, **kwargs)
 
     def get_images(self):
         """返回图片URL列表"""

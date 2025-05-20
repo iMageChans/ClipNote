@@ -6,10 +6,11 @@ class ArticleListSerializer(serializers.ModelSerializer):
     description = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
     keywords = serializers.SerializerMethodField()
+    url = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
-        fields = ['id', 'title', 'description', 'images', 'keywords', 'created_at']
+        fields = ['id', 'title', 'slug', 'description', 'images', 'keywords', 'url', 'created_at']
 
     def get_description(self, obj, bs4=None):
         soup = BeautifulSoup(obj.content, 'html.parser')
@@ -21,15 +22,29 @@ class ArticleListSerializer(serializers.ModelSerializer):
     
     def get_keywords(self, obj):
         return obj.get_keywords()
+    
+    def get_url(self, obj):
+        keywords = obj.get_keywords()
+        if keywords:
+            # 使用第一个关键词作为 URL
+            keyword = keywords[0].replace(' ', '-').lower()
+            return f"/knowledge/{keyword}"
+        elif obj.slug:
+            # 如果没有关键词，则使用 slug
+            return f"/knowledge/{obj.slug}"
+        else:
+            # 如果没有关键词和 slug，则使用 ID
+            return f"/knowledge/{obj.id}"
 
 class ArticleDetailSerializer(serializers.ModelSerializer):
     description = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
     keywords = serializers.SerializerMethodField()
+    url = serializers.SerializerMethodField()
     
     class Meta:
         model = Article
-        fields = ['id', 'title', 'content', 'description', 'images', 'keywords', 'created_at', 'updated_at']
+        fields = ['id', 'title', 'slug', 'content', 'description', 'images', 'keywords', 'url', 'created_at', 'updated_at']
     
     def get_description(self, obj, bs4=None):
         soup = BeautifulSoup(obj.content, 'html.parser')
@@ -41,6 +56,19 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
     
     def get_keywords(self, obj):
         return obj.get_keywords()
+    
+    def get_url(self, obj):
+        keywords = obj.get_keywords()
+        if keywords:
+            # 使用第一个关键词作为 URL
+            keyword = keywords[0].replace(' ', '-').lower()
+            return f"/knowledge/{keyword}"
+        elif obj.slug:
+            # 如果没有关键词，则使用 slug
+            return f"/knowledge/{obj.slug}"
+        else:
+            # 如果没有关键词和 slug，则使用 ID
+            return f"/knowledge/{obj.id}"
 
 class ArticleSerializer(serializers.ModelSerializer):
     images = serializers.ListField(child=serializers.CharField(), required=False, source='get_images')
@@ -48,7 +76,7 @@ class ArticleSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Article
-        fields = ['id', 'title', 'content', 'images', 'keywords', 'created_at', 'updated_at']
+        fields = ['id', 'title', 'slug', 'content', 'images', 'keywords', 'created_at', 'updated_at']
     
     def create(self, validated_data):
         images = validated_data.pop('get_images', [])

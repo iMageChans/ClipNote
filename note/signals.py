@@ -12,6 +12,7 @@ from django.apps import apps
 def update_sitemap(sender, instance, created, **kwargs):
     """
     当新建或更新文章时，更新站点地图
+    支持新的 URL 格式（优先使用关键词，然后是 slug，最后是 ID）
     """
     if not created:  # 如果只是更新文章，不是新建，则不更新站点地图
         return
@@ -34,7 +35,7 @@ def create_base_sitemap(sitemap_path):
     # 添加首页URL
     url_element = ET.SubElement(root, 'url')
     loc = ET.SubElement(url_element, 'loc')
-    loc.text = 'https://heartwellness.app'
+    loc.text = 'https://heartwellness.app/'
     lastmod = ET.SubElement(url_element, 'lastmod')
     lastmod.text = datetime.now(pytz.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
     changefreq = ET.SubElement(url_element, 'changefreq')
@@ -42,68 +43,9 @@ def create_base_sitemap(sitemap_path):
     priority = ET.SubElement(url_element, 'priority')
     priority.text = '1.0'
     
-    # 创建XML树
+    # 保存站点地图
     tree = ET.ElementTree(root)
-    
-    # 保存到文件
     tree.write(sitemap_path, encoding='UTF-8', xml_declaration=True)
-
-def check_and_update_sitemap():
-    """
-    检查数据库中的所有文章，确保它们都在站点地图中，使用纯文本处理
-    """
-    sitemap_path = os.path.join(settings.BASE_DIR, 'sitemap-0.xml')
-    
-    # 如果站点地图不存在，创建一个包含原始内容的站点地图
-    if not os.path.exists(sitemap_path):
-        create_original_sitemap(sitemap_path)
-        return
-    
-    try:
-        # 读取现有的站点地图文件内容
-        with open(sitemap_path, 'r', encoding='UTF-8') as f:
-            content = f.read()
-        
-        # 提取所有URL
-        import re
-        url_pattern = r'<loc>(.*?)</loc>'
-        existing_urls = set(re.findall(url_pattern, content))
-        
-        # 获取数据库中的所有文章
-        Article = apps.get_model('note', 'Article')
-        articles = Article.objects.all()
-        
-        # 检查每篇文章是否在站点地图中
-        new_urls = []
-        for article in articles:
-            article_url = f"https://heartwellness.app/knowledge/{article.id}"
-            if article_url not in existing_urls:
-                # 如果文章不在站点地图中，准备添加它
-                new_url = f"""<url>
-<loc>{article_url}</loc>
-<lastmod>{article.updated_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}</lastmod>
-<changefreq>daily</changefreq>
-<priority>0.9</priority>
-</url>"""
-                new_urls.append(new_url)
-                print(f"添加文章到站点地图: {article_url}")
-        
-        # 如果有新URL要添加
-        if new_urls:
-            # 在</urlset>前插入新URL
-            updated_content = content.replace('</urlset>', '\n'.join(new_urls) + '\n</urlset>')
-            
-            # 保存更新后的站点地图
-            with open(sitemap_path, 'w', encoding='UTF-8') as f:
-                f.write(updated_content)
-            
-            print("站点地图已更新")
-        else:
-            print("站点地图已是最新")
-            
-    except Exception as e:
-        print(f"检查站点地图时出错: {e}")
-        print("由于错误，站点地图未更新")
 
 def create_original_sitemap(sitemap_path):
     """
@@ -137,20 +79,102 @@ def create_original_sitemap(sitemap_path):
     
     print("已创建包含原始内容的站点地图文件")
 
+def check_and_update_sitemap():
+    """
+    检查数据库中的所有文章，确保它们都在站点地图中，使用纯文本处理
+    支持新的 URL 格式（优先使用关键词，然后是 slug，最后是 ID）
+    """
+    sitemap_path = os.path.join(settings.BASE_DIR, 'sitemap-0.xml')
+    
+    # 如果站点地图不存在，创建一个包含原始内容的站点地图
+    if not os.path.exists(sitemap_path):
+        create_original_sitemap(sitemap_path)
+        return
+    
+    try:
+        # 读取现有的站点地图文件内容
+        with open(sitemap_path, 'r', encoding='UTF-8') as f:
+            content = f.read()
+        
+        # 提取所有URL
+        import re
+        url_pattern = r'<loc>(.*?)</loc>'
+        existing_urls = set(re.findall(url_pattern, content))
+        
+        # 获取数据库中的所有文章
+        Article = apps.get_model('note', 'Article')
+        articles = Article.objects.all()
+        
+        # 检查每篇文章是否在站点地图中
+        new_urls = []
+        for article in articles:
+            # 优先使用关键词，然后是 slug，最后是 ID 构建 URL
+            keywords = article.get_keywords()
+            if keywords:
+                # 使用第一个关键词作为 URL
+                keyword = keywords[0].replace(' ', '-').lower()
+                article_identifier = keyword
+            elif article.slug:
+                article_identifier = article.slug
+            else:
+                article_identifier = article.id
+                
+            article_url = f"https://heartwellness.app/knowledge/{article_identifier}"
+            
+            # 检查文章 URL 是否已存在
+            # 构建可能的 URL 格式：使用关键词、slug 或 ID
+            possible_urls = []
+            # 关键词 URL
+            for kw in article.get_keywords():
+                possible_urls.append(f"https://heartwellness.app/knowledge/{kw.replace(' ', '-').lower()}")
+            # Slug URL
+            if article.slug:
+                possible_urls.append(f"https://heartwellness.app/knowledge/{article.slug}")
+            # ID URL
+            possible_urls.append(f"https://heartwellness.app/knowledge/{article.id}")
+            
+            # 检查文章的任何一种 URL 是否已在站点地图中
+            article_in_sitemap = any(url in existing_urls for url in possible_urls)
+            
+            if not article_in_sitemap:
+                # 如果文章不在站点地图中，准备添加它
+                new_url = f"""<url>
+<loc>{article_url}</loc>
+<lastmod>{article.updated_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.9</priority>
+</url>"""
+                new_urls.append(new_url)
+                print(f"添加文章到站点地图: {article_url}")
+        
+        # 如果有新URL要添加
+        if new_urls:
+            # 在</urlset>前插入新URL
+            updated_content = content.replace('</urlset>', '\n'.join(new_urls) + '\n</urlset>')
+            
+            # 保存更新后的站点地图
+            with open(sitemap_path, 'w', encoding='UTF-8') as f:
+                f.write(updated_content)
+            
+            print("站点地图已更新")
+        else:
+            print("站点地图已是最新")
+            
+    except Exception as e:
+        print(f"检查站点地图时出错: {e}")
+        print("由于错误，站点地图未更新")
+
 def add_url_to_sitemap(root, url, lastmod=None, changefreq='daily', priority='0.7'):
     """
-    向站点地图添加URL
+    向站点地图中添加 URL
     """
     url_element = ET.SubElement(root, 'url')
-    
     loc = ET.SubElement(url_element, 'loc')
     loc.text = url
     
-    if lastmod is None:
-        lastmod = datetime.now(pytz.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-    
-    lastmod_element = ET.SubElement(url_element, 'lastmod')
-    lastmod_element.text = lastmod
+    if lastmod:
+        lastmod_element = ET.SubElement(url_element, 'lastmod')
+        lastmod_element.text = lastmod
     
     changefreq_element = ET.SubElement(url_element, 'changefreq')
     changefreq_element.text = changefreq

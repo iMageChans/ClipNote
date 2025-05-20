@@ -20,7 +20,7 @@ class ArticleAdminForm(forms.ModelForm):
     
     class Meta:
         model = Article
-        fields = ['title', 'content', 'images_input', 'keywords_input']
+        fields = ['title', 'slug', 'content', 'images_input', 'keywords_input']
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -29,41 +29,55 @@ class ArticleAdminForm(forms.ModelForm):
             if hasattr(self.instance, 'get_images'):
                 images = self.instance.get_images()
                 if images:
-                    self.fields['images_input'].initial = ','.join(images)
+                    self.fields['images_input'].initial = ', '.join(images)
+            
             if hasattr(self.instance, 'get_keywords'):
                 keywords = self.instance.get_keywords()
                 if keywords:
-                    self.fields['keywords_input'].initial = ','.join(keywords)
+                    self.fields['keywords_input'].initial = ', '.join(keywords)
+                    print(f"关键词: {keywords}")  # 调试信息
+                else:
+                    print(f"文章 {self.instance.title} 没有关键词")  # 调试信息
+    
+    def clean_images_input(self):
+        images_input = self.cleaned_data.get('images_input', '')
+        if not images_input:
+            return []
+        
+        # 分割并清理URL
+        images = [url.strip() for url in images_input.split(',') if url.strip()]
+        return images
+    
+    def clean_keywords_input(self):
+        keywords_input = self.cleaned_data.get('keywords_input', '')
+        if not keywords_input:
+            return []
+        
+        # 分割并清理关键词
+        keywords = [keyword.strip() for keyword in keywords_input.split(',') if keyword.strip()]
+        print(f"清理后的关键词: {keywords}")  # 调试信息
+        return keywords
     
     def save(self, commit=True):
         instance = super().save(commit=False)
         
-        # 处理图片
-        images_input = self.cleaned_data.get('images_input', '')
-        if images_input:
-            images_list = [url.strip() for url in images_input.split(',') if url.strip()]
-            instance.set_images(images_list)
-        else:
-            instance.set_images([])
-        
-        # 处理关键词
-        keywords_input = self.cleaned_data.get('keywords_input', '')
-        if keywords_input:
-            keywords_list = [keyword.strip() for keyword in keywords_input.split(',') if keyword.strip()]
-            instance.set_keywords(keywords_list)
-        else:
-            instance.set_keywords([])
+        # 设置图片和关键词
+        instance.set_images(self.cleaned_data.get('images_input', []))
+        instance.set_keywords(self.cleaned_data.get('keywords_input', []))
         
         if commit:
             instance.save()
+        
         return instance
 
 @admin.register(Article)
 class ArticleAdmin(admin.ModelAdmin):
     form = ArticleAdminForm
-    list_display = ('title', 'display_images', 'display_keywords', 'created_at')
-    search_fields = ('title',)
+    list_display = ('title', 'display_images', 'display_keywords', 'created_at', 'updated_at')
+    list_filter = ('created_at', 'updated_at')
+    search_fields = ('title', 'slug')
     readonly_fields = ('created_at', 'updated_at')
+    prepopulated_fields = {'slug': ('title',)}  # 自动根据标题生成 slug
     
     def display_images(self, obj):
         images = obj.get_images()
@@ -88,7 +102,7 @@ class ArticleAdmin(admin.ModelAdmin):
     display_keywords.short_description = '关键词'
     
     def get_fields(self, request, obj=None):
-        fields = ['title', 'content', 'images_input', 'keywords_input']
+        fields = ['title', 'slug', 'content', 'images_input', 'keywords_input']
         if obj:  # 如果是编辑现有对象
             fields.extend(['created_at', 'updated_at'])
         return fields
