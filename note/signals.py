@@ -79,19 +79,70 @@ def create_original_sitemap(sitemap_path):
     
     print("已创建包含原始内容的站点地图文件")
 
-def check_and_update_sitemap():
+def check_and_update_sitemap(rebuild=False):
     """
-    检查数据库中的所有文章，确保它们都在站点地图中，使用纯文本处理
-    支持新的 URL 格式（优先使用关键词，然后是 slug，最后是 ID）
+    检查数据库中的所有文章，确保它们都在站点地图中
+    
+    参数:
+    rebuild -- 如果为True，则完全重建站点地图，而不是仅添加缺失的文章
     """
     sitemap_path = os.path.join(settings.BASE_DIR, 'sitemap-0.xml')
     
     # 如果站点地图不存在，创建一个包含原始内容的站点地图
-    if not os.path.exists(sitemap_path):
-        create_original_sitemap(sitemap_path)
-        return
+    if not os.path.exists(sitemap_path) or rebuild:
+        # 如果需要重建，则先使用基本结构创建一个新的站点地图
+        if rebuild:
+            create_base_sitemap(sitemap_path)
+        else:
+            create_original_sitemap(sitemap_path)
+        
+        # 如果是重建，则需要继续添加所有文章；否则直接返回
+        if not rebuild:
+            return
     
     try:
+        # 如果是重建，则使用已经创建的基本站点地图
+        if rebuild:
+            # 解析站点地图XML
+            tree = ET.parse(sitemap_path)
+            root = tree.getroot()
+            
+            # 获取数据库中的所有文章
+            Article = apps.get_model('note', 'Article')
+            articles = Article.objects.all()
+            
+            # 添加每篇文章到站点地图
+            for article in articles:
+                # 优先使用关键词，然后是 slug，最后是 ID 构建 URL
+                keywords = article.get_keywords()
+                if keywords:
+                    # 使用第一个关键词作为 URL
+                    keyword = keywords[0].replace(' ', '-').lower()
+                    article_identifier = keyword
+                elif article.slug:
+                    article_identifier = article.slug
+                else:
+                    article_identifier = article.id
+                    
+                # 使用正确的前端 URL 格式
+                article_url = f"https://heartwellness.app/knowledge/{article_identifier}"
+                
+                # 添加文章到站点地图
+                add_url_to_sitemap(
+                    root, 
+                    article_url, 
+                    lastmod=article.updated_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
+                    changefreq='daily',
+                    priority='0.9'
+                )
+                print(f"添加文章到站点地图: {article_url}")
+            
+            # 保存站点地图
+            tree.write(sitemap_path, encoding='UTF-8', xml_declaration=True)
+            print("站点地图已完全重建")
+            return
+            
+        # 如果不是重建，则使用之前的逻辑增量更新
         # 读取现有的站点地图文件内容
         with open(sitemap_path, 'r', encoding='UTF-8') as f:
             content = f.read()
