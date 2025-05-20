@@ -59,11 +59,11 @@ def create_original_sitemap(sitemap_path):
 <url><loc>https://heartwellness.app/knowledge/health/meditation-benefits</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
 <url><loc>https://heartwellness.app/knowledge/basics/normal-ranges</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
 <url><loc>https://heartwellness.app/knowledge/health/stress-heart</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app/knowledge/lifestyle/exercise</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app/knowledge</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app/knowledge/lifestyle/nutrition</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/health/exercise</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/health</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/health/nutrition</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
 <url><loc>https://heartwellness.app/knowledge/health/exercise-stress</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app/knowledge/lifestyle/sleep</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/health/sleep</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
 <url><loc>https://heartwellness.app/stories</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
 <url><loc>https://heartwellness.app/tools/breathing-exercise</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
 <url><loc>https://heartwellness.app/tools</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
@@ -71,7 +71,7 @@ def create_original_sitemap(sitemap_path):
 <url><loc>https://heartwellness.app/tools/stress-test</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
 <url><loc>https://heartwellness.app/about</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
 <url><loc>https://heartwellness.app/tools/heart-rate-calculator</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app/knowledge/basics/high-heart-rate</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/health/high-heart-rate</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
 </urlset>"""
     
     with open(sitemap_path, 'w', encoding='UTF-8') as f:
@@ -119,6 +119,7 @@ def check_and_update_sitemap():
             else:
                 article_identifier = article.id
                 
+            # 使用正确的前端 URL 格式
             article_url = f"https://heartwellness.app/knowledge/{article_identifier}"
             
             # 检查文章 URL 是否已存在
