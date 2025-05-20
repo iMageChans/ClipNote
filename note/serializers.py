@@ -62,13 +62,13 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
         if keywords:
             # 使用第一个关键词作为 URL
             keyword = keywords[0].replace(' ', '-').lower()
-            return f"/knowledge/{keyword}"
+            return f"/api/articles/{keyword}"
         elif obj.slug:
             # 如果没有关键词，则使用 slug
-            return f"/knowledge/{obj.slug}"
+            return f"/api/articles/{obj.slug}"
         else:
             # 如果没有关键词和 slug，则使用 ID
-            return f"/knowledge/{obj.id}"
+            return f"/api/articles/{obj.id}"
 
 class ArticleSerializer(serializers.ModelSerializer):
     images = serializers.ListField(child=serializers.CharField(), required=False, source='get_images')
