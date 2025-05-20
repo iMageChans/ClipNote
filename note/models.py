@@ -6,7 +6,7 @@ from django.utils.text import slugify
 class Article(models.Model):
     title = models.CharField('标题', max_length=200)
     content = RichTextField('内容')
-    slug = models.SlugField('URL别名', max_length=255, unique=True, blank=True)
+    slug = models.SlugField('URL别名', max_length=255, unique=True, blank=True, null=True)
     images = models.TextField('预览图', blank=True, default='[]')
     keywords = models.TextField('关键词', blank=True, default='[]')
     created_at = models.DateTimeField('创建时间', auto_now_add=True)
