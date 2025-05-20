@@ -99,12 +99,15 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
                     # 使用第一个关键词作为 URL
                     keyword = keywords[0].replace(' ', '-').lower()
                     item['url'] = f"{settings.SITE_URL}/api/articles/{keyword}"
+                    item['slug_keyword'] = keyword
                 elif item.get('slug'):
                     # 如果没有关键词，则使用 slug
                     item['url'] = f"{settings.SITE_URL}/api/articles/{item.get('slug')}"
+                    item['slug_keyword'] = item.get('slug')
                 else:
                     # 如果没有关键词和 slug，则使用 ID
                     item['url'] = f"{settings.SITE_URL}/api/articles/{item.get('id')}"
+                    item['slug_keyword'] = item.get('id')
             
             return Response(response_data)
         
