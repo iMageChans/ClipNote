@@ -53,25 +53,17 @@ def create_original_sitemap(sitemap_path):
     """
     original_content = """<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
-<url><loc>https://heartwellness.app/knowledge/basics/heart-rate-101</loc><lastmod>2025-03-06T10:46:41.986Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app/api/stories</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app/knowledge/basics</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app/knowledge/health/meditation-benefits</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app/knowledge/basics/normal-ranges</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app/knowledge/health/stress-heart</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app/knowledge/health/exercise</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app/knowledge/health</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app/knowledge/health/nutrition</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app/knowledge/health/exercise-stress</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app/knowledge/health/sleep</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app/stories</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app/tools/breathing-exercise</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app/tools</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app/tools/stress-test</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app/about</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app/tools/heart-rate-calculator</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://heartwellness.app/knowledge/health/high-heart-rate</loc><lastmod>2025-03-06T10:46:41.987Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/basics</loc><lastmod>2025-05-21T14:40:54.550Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/basics/normal-ranges</loc><lastmod>2025-05-21T14:40:54.550Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/health/exercise-stress</loc><lastmod>2025-05-21T14:40:54.550Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/lifestyle/exercise</loc><lastmod>2025-05-21T14:40:54.550Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/health/stress-heart</loc><lastmod>2025-05-21T14:40:54.550Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/lifestyle/nutrition</loc><lastmod>2025-05-21T14:40:54.550Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/health/meditation-benefits</loc><lastmod>2025-05-21T14:40:54.550Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/lifestyle/sleep</loc><lastmod>2025-05-21T14:40:54.550Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/basics/heart-rate-101</loc><lastmod>2025-05-21T14:40:54.550Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge/basics/high-heart-rate</loc><lastmod>2025-05-21T14:40:54.550Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://heartwellness.app/knowledge</loc><lastmod>2025-05-21T14:40:54.550Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
 </urlset>"""
     
     with open(sitemap_path, 'w', encoding='UTF-8') as f:
@@ -86,7 +78,7 @@ def check_and_update_sitemap(rebuild=False):
     参数:
     rebuild -- 如果为True，则更新所有文章的URL，而不是仅添加缺失的文章
     """
-    sitemap_path = os.path.join(settings.BASE_DIR, 'sitemap-0.xml')
+    sitemap_path = os.path.join(settings.BASE_DIR, 'sitemap-knowledge.xml')
     
     # 如果站点地图不存在，创建一个包含原始内容的站点地图
     if not os.path.exists(sitemap_path):

@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-<sitemap><loc>https://heartwellness.app/sitemap-0.xml</loc></sitemap>
+<sitemap>
+<loc>https://heartwellness.app/sitemap-main.xml</loc>
+</sitemap>
+<sitemap>
+<loc>https://heartwellness.app/sitemap-tools.xml</loc>
+</sitemap>
+<sitemap>
+<loc>https://heartwellness.app/sitemap-knowledge.xml</loc>
+</sitemap>
 </sitemapindex>
