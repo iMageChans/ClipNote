@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('api/admin/', admin.site.urls),  # 保持原来的admin路径
-    path('', include('note.urls')),  # note应用的URL
+    path('/api/', include('note.urls')),  # note应用的URL
     path('fitness/', include('fitness.urls')),  # fitness应用的URL
 ]
 
