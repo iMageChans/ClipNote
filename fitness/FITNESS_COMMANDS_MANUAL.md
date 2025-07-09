@@ -106,7 +106,7 @@ python manage.py import_exercises --clear
 ## 🎥 2. import_youtube_videos
 
 ### 功能描述
-使用YouTube Data API v3自动为健身动作搜索并获取教程视频链接。
+使用YouTube Data API v3自动为健身动作搜索并获取教程视频链接，支持配额管理和断点续传功能。
 
 ### 前置要求
 - 获取YouTube Data API密钥
@@ -125,6 +125,9 @@ python manage.py import_youtube_videos [options]
 | `--limit` | int | None | 限制处理的动作数量（用于测试） |
 | `--delay` | float | 1.0 | 请求之间的延迟时间（秒） |
 | `--dry-run` | flag | False | 预览模式，不实际更新数据库 |
+| `--reset-progress` | flag | False | 重置进度，从头开始处理 |
+| `--show-progress` | flag | False | 显示当前进度信息 |
+| `--max-quota` | int | 9000 | 每日最大配额限制（保留1000作为缓冲） |
 
 ### API密钥设置
 
@@ -167,6 +170,49 @@ python manage.py import_youtube_videos --delay 2
 python manage.py import_youtube_videos --force --delay 2
 ```
 
+#### 5. 查看当前进度
+```bash
+python manage.py import_youtube_videos --show-progress
+```
+
+#### 6. 重置进度重新开始
+```bash
+python manage.py import_youtube_videos --reset-progress
+```
+
+#### 7. 设置自定义配额限制
+```bash
+python manage.py import_youtube_videos --max-quota 8000 --delay 2
+```
+
+### 🔄 配额管理与断点续传
+
+#### 配额管理功能
+- **每日配额限制**: 默认9000配额/天（保留1000作为缓冲）
+- **自动配额跟踪**: 实时监控配额使用情况
+- **智能停止**: 配额用完时自动停止处理
+- **每日重置**: 检测到新的一天时自动重置配额计数
+
+#### 断点续传功能
+- **进度保存**: 自动保存处理进度到本地文件
+- **智能恢复**: 重新运行时自动跳过已处理的动作
+- **错误容忍**: 处理失败的动作会被标记，避免重复处理
+
+#### 进度文件
+系统会在项目根目录创建 `youtube_import_progress.json` 文件保存进度信息：
+```json
+{
+  "processed_ids": [1, 2, 3, ...],
+  "success_count": 150,
+  "error_count": 5,
+  "skipped_count": 10,
+  "quota_used_today": 8500,
+  "last_date": "2024-01-15",
+  "last_processed": "bench-press",
+  "last_updated": "2024-01-15T14:30:00"
+}
+```
+
 ### 搜索策略
 系统使用多种搜索关键词组合：
 - `"{动作名称} tutorial"`
@@ -181,17 +227,25 @@ python manage.py import_youtube_videos --force --delay 2
 - 过滤无关内容
 
 ### 输出示例
+
+#### 正常处理输出
 ```
-将处理 864 个没有YouTube链接的动作
+今日剩余配额: 8500 (已用: 1500)
+发现之前的进度，跳过已处理的 15 个动作
+将处理 849 个没有YouTube链接的动作
+
 使用模型: YouTube Data API v3
 请求延迟: 2.0 秒
+最大配额限制: 9000
 
-[1/864] 正在处理: bench-press
+[1/849] 正在处理: bench-press
+    剩余配额: 8400
     搜索: "bench press tutorial"
       ✓ 找到: How to Bench Press for Beginners | Proper Form...
   ✓ 已保存视频链接: https://www.youtube.com/watch?v=xxxxx
 
-[2/864] 正在处理: squat
+[2/849] 正在处理: squat
+    剩余配额: 8300
     搜索: "squat tutorial"
       ✓ 找到: Perfect Squat Form Tutorial...
   ✓ 已保存视频链接: https://www.youtube.com/watch?v=yyyyy
@@ -201,15 +255,82 @@ python manage.py import_youtube_videos --force --delay 2
 成功获取视频: 820 个
 未找到视频: 35 个
 处理失败: 9 个
-总计处理: 864 个
+本次处理: 849 个
+今日使用配额: 8900/9000
+总体成功率: 94.9%
 
-成功率: 94.9%
+还有 27 个动作待处理
+可以再次运行命令继续处理
+```
+
+#### 配额用完时的输出
+```
+今日剩余配额: 200 (已用: 8800)
+将处理 150 个没有YouTube链接的动作
+
+[1/150] 正在处理: push-up
+    剩余配额: 100
+    搜索: "push up tutorial"
+      ✓ 找到: Perfect Push Up Form Tutorial...
+  ✓ 已保存视频链接: https://www.youtube.com/watch?v=zzzzz
+
+⚠️  配额已达到每日限制 (9000)，停止处理
+明天继续时会从当前位置恢复处理
+
+============================================================
+因配额限制而暂停处理!
+成功获取视频: 1 个
+未找到视频: 0 个
+处理失败: 0 个
+本次处理: 1 个
+今日使用配额: 9000/9000
+总体成功率: 100.0%
+
+还有 149 个动作待处理
+明天运行时会自动继续处理剩余动作
+```
+
+#### 进度查看输出
+```bash
+python manage.py import_youtube_videos --show-progress
+```
+```
+==================================================
+YouTube导入进度信息
+==================================================
+最后处理日期: 2024-01-15
+今天日期: 2024-01-15
+今日配额使用: 8500/9000 (剩余: 500)
+已处理动作: 820 个
+  - 成功: 780 个
+  - 失败: 15 个
+  - 跳过: 25 个
+最后处理: deadlift
+最后更新: 2024-01-15T14:30:00
+剩余待处理: 47 个动作
+估算需要配额: 1880
+估算需要天数: 0.2 天
 ```
 
 ### API配额管理
+
+#### 配额信息
 - **每日免费配额**: 10,000单位
 - **搜索操作消耗**: 100单位/次
+- **系统默认限制**: 9,000单位/天（保留1,000作为缓冲）
 - **建议延迟**: 1-2秒避免过快请求
+
+#### 配额监控
+- 实时显示剩余配额
+- 自动计算处理能力
+- 智能预估完成时间
+- 配额用完时自动暂停
+
+#### 最佳实践
+1. **首次运行**: 使用`--dry-run`预估配额需求
+2. **分批处理**: 设置合理的`--limit`参数
+3. **监控进度**: 定期运行`--show-progress`查看状态
+4. **配额保护**: 使用`--max-quota`设置安全阈值
 
 ---
 
@@ -388,7 +509,8 @@ python manage.py import_exercises             # 实际导入
 
 # 2. 获取YouTube视频（可选）
 python manage.py import_youtube_videos --dry-run --limit 5  # 预览
-python manage.py import_youtube_videos --limit 50 --delay 2  # 分批处理
+python manage.py import_youtube_videos --show-progress      # 查看进度
+python manage.py import_youtube_videos --delay 2           # 开始处理（支持断点续传）
 
 # 3. 生成AI描述
 python manage.py generate_descriptions --dry-run --limit 3  # 预览
@@ -398,8 +520,14 @@ python manage.py generate_descriptions --extract-keywords --delay 2  # 批量生
 
 ### 数据更新维护
 ```bash
-# 强制更新所有YouTube链接
-python manage.py import_youtube_videos --force --delay 2
+# 查看YouTube导入进度
+python manage.py import_youtube_videos --show-progress
+
+# 继续未完成的YouTube导入
+python manage.py import_youtube_videos --delay 2
+
+# 强制重新处理所有YouTube链接
+python manage.py import_youtube_videos --reset-progress --force --delay 2
 
 # 重新生成所有描述
 python manage.py generate_descriptions --force --extract-keywords --delay 2
@@ -424,6 +552,7 @@ print(f'健身动作: {Exercise.objects.count()}')
 
 ### 检查YouTube链接状态
 ```bash
+# 使用Django shell检查
 python manage.py shell -c "
 from fitness.models import Exercise
 total = Exercise.objects.count()
@@ -432,6 +561,9 @@ print(f'总动作: {total}')
 print(f'有YouTube链接: {with_youtube}')
 print(f'缺失YouTube链接: {total - with_youtube}')
 "
+
+# 或使用命令直接查看进度
+python manage.py import_youtube_videos --show-progress
 ```
 
 ### 检查AI生成状态
@@ -478,7 +610,11 @@ print(f'内容类型数量: {types}')
 #### 3. API配额限制
 ```
 错误: API配额限制，建议增加延迟时间
-解决: 增加 --delay 参数值，或等待配额重置
+解决: 
+1. 等待明天配额重置
+2. 使用 --show-progress 查看配额使用情况
+3. 增加 --delay 参数值
+4. 使用 --max-quota 设置更保守的限制
 ```
 
 #### 4. 文件路径错误
@@ -491,6 +627,21 @@ print(f'内容类型数量: {types}')
 ```
 错误: UNIQUE constraint failed
 解决: 使用 --clear 选项清空现有数据，或检查重复数据
+```
+
+#### 6. 进度文件损坏
+```
+错误: 进度文件损坏，将重新开始
+解决: 
+1. 使用 --reset-progress 重置进度
+2. 手动删除 youtube_import_progress.json 文件
+3. 重新运行命令
+```
+
+#### 7. 意外中断处理
+```
+解决: 重新运行相同命令即可自动恢复进度
+注意: 系统会自动跳过已处理的动作
 ```
 
 ### 调试技巧
@@ -515,6 +666,26 @@ python manage.py command_name --delay 5
 python manage.py command_name --dry-run
 ```
 
+#### 5. 查看处理进度
+```bash
+python manage.py import_youtube_videos --show-progress
+```
+
+#### 6. 重置进度重新开始
+```bash
+python manage.py import_youtube_videos --reset-progress
+```
+
+#### 5. 查看处理进度
+```bash
+python manage.py import_youtube_videos --show-progress
+```
+
+#### 6. 重置进度重新开始
+```bash
+python manage.py import_youtube_videos --reset-progress
+```
+
 ---
 
 ## 📈 性能优化建议
@@ -523,6 +694,8 @@ python manage.py command_name --dry-run
 - 使用 `--limit` 参数分批处理大量数据
 - 根据API配额合理安排处理时间
 - 使用 `--delay` 参数避免API限制
+- 利用断点续传功能分多天处理大量数据
+- 使用 `--show-progress` 监控处理进度
 
 ### 2. 成本控制
 - 优先使用GPT-3.5-turbo进行批量生成
@@ -534,10 +707,12 @@ python manage.py command_name --dry-run
 - 适当增加延迟时间避免超时
 - 监控API响应状态
 
-### 4. 数据备份
+### 4. 数据备份与恢复
 - 在大批量操作前备份数据库
 - 使用 `--dry-run` 模式验证操作
 - 保留原始数据文件
+- 定期备份进度文件 `youtube_import_progress.json`
+- 使用 `--reset-progress` 时注意保存当前进度
 
 ---
 
@@ -558,6 +733,8 @@ python manage.py command_name --dry-run
 - 记录命令执行日志
 - 监控API使用情况
 - 定期检查数据完整性
+- 使用 `--show-progress` 定期查看处理状态
+- 监控每日配额使用情况
 
 ### 4. 错误处理
 - 遇到错误时检查网络连接
@@ -573,5 +750,41 @@ python manage.py command_name --dry-run
 2. 错误信息截图
 3. 系统环境信息
 4. API配额使用情况
+5. 进度文件内容（`youtube_import_progress.json`）
+6. 处理中断的时间点和当前进度
+
+### 📋 进度管理最佳实践
+
+#### 日常使用流程
+1. **开始前检查**: `python manage.py import_youtube_videos --show-progress`
+2. **预览处理**: `python manage.py import_youtube_videos --dry-run --limit 10`
+3. **开始处理**: `python manage.py import_youtube_videos --delay 2`
+4. **定期监控**: 定时运行 `--show-progress` 查看状态
+5. **配额用完**: 等待第二天自动继续
+
+#### 多天处理策略
+```bash
+# 第一天
+python manage.py import_youtube_videos --max-quota 8000 --delay 2
+
+# 第二天继续
+python manage.py import_youtube_videos --show-progress  # 查看昨日进度
+python manage.py import_youtube_videos --delay 2        # 继续处理
+
+# 如需重新开始
+python manage.py import_youtube_videos --reset-progress
+```
+
+#### 错误恢复
+```bash
+# 查看当前状态
+python manage.py import_youtube_videos --show-progress
+
+# 继续处理（自动跳过已处理项）
+python manage.py import_youtube_videos --delay 2
+
+# 如果需要完全重置
+python manage.py import_youtube_videos --reset-progress
+```
 
 这样可以更快地定位和解决问题。 

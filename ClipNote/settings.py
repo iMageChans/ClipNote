@@ -138,7 +138,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny'
-    ]
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+    'DEFAULT_FILTER_BACKENDS': [
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
 }
 
 CKEDITOR_CONFIGS = {
@@ -155,6 +161,9 @@ SITE_URL = 'https://heartwellness.app'  # 网站的实际URL
 # 媒体文件配置
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# 确保媒体文件夹存在
+os.makedirs(MEDIA_ROOT, exist_ok=True)
 
 # CSRF 配置
 CSRF_TRUSTED_ORIGINS = ['https://heartwellness.app']

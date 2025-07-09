@@ -7,8 +7,8 @@ services:
     restart: always
     volumes:
       - .:/app
-      - /www/ClipNote/static:/app/static
-      - /www/ClipNote/media:/app/media
+      - media_volume:/app/media
+      - static_volume:/app/static
       - ./db.sqlite3:/app/db.sqlite3
     ports:
       - "8000:8000"
