@@ -33,7 +33,7 @@ class ExerciseViewSet(viewsets.ReadOnlyModelViewSet):
     ordering = ['-created_at']  # 默认按创建时间倒序
     
     def get_serializer_class(self):
-        if self.action == 'list' or self.action == 'by_body_part':
+        if self.action == 'list' or self.action == 'by_body_part' or self.action == 'recommendations':
             return ExerciseListSerializer
         return ExerciseDetailSerializer
     
@@ -98,6 +98,26 @@ class ExerciseViewSet(viewsets.ReadOnlyModelViewSet):
         
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+    
+    @action(detail=False, url_path='(?P<body_part_slug>[^/.]+)/recommendations')
+    def recommendations(self, request, body_part_slug=None):
+        """
+        获取特定身体部位的推荐动作（随机8个）
+        """
+        # 验证body_part是否存在
+        get_object_or_404(BodyPart, slug=body_part_slug)
+        
+        queryset = Exercise.objects.filter(body_part__slug=body_part_slug).select_related('body_part')
+        
+        # 随机选择8个动作
+        recommended_exercises = queryset.order_by('?')[:8]
+        
+        serializer = self.get_serializer(recommended_exercises, many=True)
+        return Response({
+            'body_part': body_part_slug,
+            'count': len(recommended_exercises),
+            'recommendations': serializer.data
+        })
     
     @action(detail=False, methods=['get'])
     def search(self, request):
