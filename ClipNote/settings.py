@@ -41,9 +41,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'ckeditor',
-    'note.apps.NoteConfig',
     'corsheaders',
+    'note',
+    'fitness',
+    'ckeditor',
 ]
 
 MIDDLEWARE = [
@@ -163,3 +164,10 @@ CORS_ALLOWED_ORIGINS = [
     'https://heartwellness.app',
 ]
 CORS_ALLOW_CREDENTIALS = True
+
+# YouTube API 配置
+YOUTUBE_API_KEY = os.environ.get('YOUTUBE_API_KEY', '')  # 从环境变量获取API密钥
+
+# OpenAI ChatGPT API 配置
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')  # 从环境变量获取API密钥
+OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')  # 默认使用GPT-3.5

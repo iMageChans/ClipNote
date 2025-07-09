@@ -1,0 +1,33 @@
+# 环境变量文件 (保护API密钥)
+.env
+.env.local
+.env.production
+
+# Django
+*.pyc
+*/__pycache__/
+__pycache__/
+*/migrations/__pycache__/
+db.sqlite3
+*.log
+media/
+staticfiles/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# 其他敏感文件
+*.key
+*.pem
+*.crt
+secrets/ 
