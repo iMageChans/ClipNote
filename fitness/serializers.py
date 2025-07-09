@@ -21,7 +21,7 @@ class ExerciseListSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Exercise
-        fields = ['id', 'name', 'slug', 'body_part', 'image', 'image_width', 
+        fields = ['id', 'name', 'slug', 'body_part', 'image_url', 'image_width', 
                  'image_height', 'url', 'youtube_url', 'youtube_embed_url', 
                  'youtube_thumbnail', 'ai_generated', 'keywords', 'created_at']
     
@@ -52,7 +52,7 @@ class ExerciseDetailSerializer(serializers.ModelSerializer):
         model = Exercise
         fields = ['id', 'name', 'slug', 'body_part', 'description', 'description_markdown', 
                  'description_html', 'youtube_url', 'youtube_embed_url', 'youtube_thumbnail', 
-                 'youtube_thumbnail_hd', 'image', 'image_width', 'image_height', 'url', 
+                 'youtube_thumbnail_hd', 'image_url', 'image_width', 'image_height', 'url', 
                  'ai_generated', 'keywords', 'keyword_mappings', 'created_at', 'updated_at']
     
     def get_url(self, obj):

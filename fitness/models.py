@@ -31,7 +31,7 @@ class Exercise(models.Model):
     body_part = models.ForeignKey(BodyPart, on_delete=models.CASCADE, related_name='exercises', verbose_name='锻炼部位')
     description = RichTextField('动作描述')
     youtube_url = models.URLField('YouTube视频链接', blank=True)
-    image = models.ImageField('动作图片', upload_to='exercises/%Y/%m/', blank=True)
+    image_url = models.URLField('动作图片URL', blank=True, help_text='图片的网络链接地址')
     image_width = models.PositiveIntegerField('图片宽度', null=True, blank=True)
     image_height = models.PositiveIntegerField('图片高度', null=True, blank=True)
     generated_keywords = models.TextField('生成内容关键词', blank=True, default='[]', help_text='JSON格式存储生成内容的关键词')

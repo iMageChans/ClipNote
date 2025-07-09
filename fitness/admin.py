@@ -14,7 +14,7 @@ class ExerciseAdmin(admin.ModelAdmin):
     list_filter = ('body_part', 'ai_generated', 'created_at')
     search_fields = ('name', 'description')
     prepopulated_fields = {'slug': ('name',)}
-    readonly_fields = ('image_width', 'image_height', 'generated_keywords', 'keyword_count_detail', 'youtube_embed_preview', 'created_at', 'updated_at')
+    readonly_fields = ('image_width', 'image_height', 'generated_keywords', 'keyword_count_detail', 'youtube_embed_preview', 'image_preview', 'created_at', 'updated_at')
     
     fieldsets = (
         ('基本信息', {
@@ -24,7 +24,7 @@ class ExerciseAdmin(admin.ModelAdmin):
             'fields': ('description', 'ai_generated')
         }),
         ('媒体文件', {
-            'fields': ('image', 'image_width', 'image_height', 'youtube_url', 'youtube_embed_preview')
+            'fields': ('image_url', 'image_preview', 'image_width', 'image_height', 'youtube_url', 'youtube_embed_preview')
         }),
         ('关键词和映射', {
             'fields': ('generated_keywords', 'keyword_count_detail'),
@@ -37,9 +37,9 @@ class ExerciseAdmin(admin.ModelAdmin):
     )
     
     def display_image(self, obj):
-        if obj.image:
-            return format_html('<img src="{}" width="50" height="50" />', obj.image.url)
-        return "无图片"
+        if obj.image_url:
+            return format_html('<img src="{}" width="50" height="50" style="object-fit: cover;" onerror="this.src=\'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjZjNmNGY2Ii8+CjxwYXRoIGQ9Ik0yNSAyMEM0MS41IDIwIDQ1IDI1IDQ1IDMwVjM1QzQ1IDQwIDQxLjUgNDUgMjUgNDVTNSA0MCA1IDM1VjMwQzUgMjUgOC41IDIwIDI1IDIwWiIgZmlsbD0iIzlmYTZiNyIvPgo8Y2lyY2xlIGN4PSIxOCIgY3k9IjI3IiByPSIzIiBmaWxsPSIjZjNmNGY2Ii8+CjxwYXRoIGQ9Ik0xNSAzNUwyMCAzMEwyNSAzNUwzNSAyNUw0MCAzNSIgc3Ryb2tlPSIjZjNmNGY2IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz4KPHN2Zz4K\'" />', obj.image_url)
+        return format_html('<span style="color: #999;">无图片</span>')
     display_image.short_description = '预览图'
     
     def has_youtube(self, obj):
@@ -76,6 +76,21 @@ class ExerciseAdmin(admin.ModelAdmin):
             )
         return "无YouTube链接"
     youtube_embed_preview.short_description = 'YouTube嵌入预览'
+    
+    def image_preview(self, obj):
+        if obj.image_url:
+            return format_html(
+                '<div style="text-align: center;">'
+                '<img src="{}" style="max-width: 300px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px;" '
+                'onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'block\';" />'
+                '<div style="display: none; padding: 20px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; color: #666;">'
+                '图片加载失败<br><small>请检查URL是否正确</small></div>'
+                '<br><small style="color: #666; word-break: break-all;">{}</small>'
+                '</div>',
+                obj.image_url, obj.image_url
+            )
+        return format_html('<span style="color: #999;">无图片URL</span>')
+    image_preview.short_description = '图片预览'
 
 class ContentKeywordMappingInline(admin.TabularInline):
     model = ContentKeywordMapping
