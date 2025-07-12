@@ -6,7 +6,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('api/admin/', admin.site.urls),  # 保持原来的admin路径
     path('api/', include('note.urls')),  # note应用的URL
-    path('fitness/', include('fitness.urls')),  # fitness应用的URL
+    path('api/fitness/', include('fitness.urls')),  # fitness应用的URL
 ]
 
 # 开发环境下提供媒体文件和静态文件服务
