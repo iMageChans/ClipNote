@@ -60,14 +60,21 @@ class ExerciseViewSet(viewsets.ReadOnlyModelViewSet):
         """
         return super().list(request, *args, **kwargs)
     
-    def retrieve(self, request, body_part_slug=None, exercise_slug=None):
+    def retrieve(self, request, pk=None, body_part_slug=None, exercise_slug=None):
         """
-        通过部位slug和动作slug获取特定动作详情
+        通过主键、部位slug和动作slug获取特定动作详情
         """
         queryset = self.get_queryset()
-        exercise = get_object_or_404(queryset, 
-                                   body_part__slug=body_part_slug, 
-                                   slug=exercise_slug)
+        
+        # 如果有body_part_slug和exercise_slug，使用它们来查找
+        if body_part_slug and exercise_slug:
+            exercise = get_object_or_404(queryset, 
+                                       body_part__slug=body_part_slug, 
+                                       slug=exercise_slug)
+        else:
+            # 否则使用pk查找
+            exercise = get_object_or_404(queryset, pk=pk)
+        
         serializer = self.get_serializer(exercise)
         return Response(serializer.data)
     
