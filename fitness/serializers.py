@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import BodyPart, Exercise, ContentKeywordMapping
 import markdown
 from markdownify import markdownify
+import re
 
 class BodyPartSerializer(serializers.ModelSerializer):
     class Meta:
@@ -71,6 +72,39 @@ class ExerciseDetailSerializer(serializers.ModelSerializer):
     def get_keywords(self, obj):
         return obj.get_generated_keywords()
     
+    def _format_markdown_content(self, content):
+        """格式化markdown内容，确保换行和列表格式正确"""
+        if not content:
+            return ""
+        
+        # 步骤1：分离标题和后面的内容
+        content = re.sub(r'(##\s+[^#\n]+?)\s+(\d+\.)', r'\1\n\n\2', content)
+        content = re.sub(r'(##\s+[^#\n]+?)\s*(-\s)', r'\1\n\n\2', content)
+        
+        # 步骤2：确保标题在独立的行上
+        content = re.sub(r'(##\s+[^#\n]+?)\s*(?=##|\n|$)', r'\n\1\n', content)
+        
+        # 步骤3：处理数字列表项 - 每个列表项独立一行
+        content = re.sub(r'(\d+)\.\s*([^.]+?\.)\s*(?=\d+\.)', r'\1. \2\n', content)
+        
+        # 步骤4：处理无序列表项 - 更精确地分离每个列表项
+        # 匹配 "- 内容." 模式，后面跟着空格和 "- " 的情况
+        content = re.sub(r'(-\s[^-]+?\.)\s*(-\s)', r'\1\n\2', content)
+        
+        # 步骤5：在标题后添加空行
+        content = re.sub(r'(##[^\n]+)\n(?!\n)', r'\1\n\n', content)
+        
+        # 步骤6：处理剩余的无序列表项格式
+        content = re.sub(r'(^|\n)([^-\n]*?)(-\s)', r'\1\2\n\3', content)
+        
+        # 步骤7：清理多余的空行，但保留段落分隔
+        content = re.sub(r'\n{3,}', '\n\n', content)
+        
+        # 步骤8：移除开头和结尾的空行
+        content = content.strip()
+        
+        return content
+
     def get_description_markdown(self, obj):
         """返回标准markdown格式"""
         if obj.description:
@@ -82,10 +116,13 @@ class ExerciseDetailSerializer(serializers.ModelSerializer):
                     bullets='-',          # 使用 - 作为列表符号
                     strong_mark='**',     # 使用 ** 作为粗体标记
                     em_mark='*',          # 使用 * 作为斜体标记
-                    convert=['b', 'strong', 'i', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'a', 'img'],
-                    strip=['script', 'style']  # 移除script和style标签
+                    strip=['script', 'style', 'div']  # 移除script、style和div标签
                 )
-                return markdown_content.strip()
+                
+                # 应用自定义格式化
+                formatted_content = self._format_markdown_content(markdown_content)
+                
+                return formatted_content
             except Exception:
                 # 如果转换失败，返回原始HTML内容
                 return obj.description
