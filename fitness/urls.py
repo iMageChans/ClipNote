@@ -11,5 +11,5 @@ urlpatterns = [
     path('', include(router.urls)),
     # 更具体的路由模式放在后面作为备用
     path('exercises/<str:body_part_slug>/<str:exercise_slug>/', views.ExerciseViewSet.as_view({'get': 'retrieve'}), name='exercise-detail-legacy'),
-    path('exercises/<str:body_part_slug>/', views.ExerciseViewSet.as_view({'get': 'by_body_part'}), name='exercise-by-body-part-legacy'),
+    path('exercises/body-parts/<str:body_part_slug>/', views.ExerciseViewSet.as_view({'get': 'by_body_part'}), name='exercise-by-body-part-legacy'),
 ] 
