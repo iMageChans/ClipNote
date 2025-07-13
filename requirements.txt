@@ -9,4 +9,5 @@ Pillow==11.3.0
 requests==2.32.4
 openai==1.51.2
 python-decouple==3.8
-markdown==3.7 
+markdown==3.7
+markdownify==1.1.0 

@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import BodyPart, Exercise, ContentKeywordMapping
 import markdown
+from markdownify import markdownify
 
 class BodyPartSerializer(serializers.ModelSerializer):
     class Meta:
@@ -71,8 +72,24 @@ class ExerciseDetailSerializer(serializers.ModelSerializer):
         return obj.get_generated_keywords()
     
     def get_description_markdown(self, obj):
-        """返回原始markdown格式"""
-        return obj.description
+        """返回标准markdown格式"""
+        if obj.description:
+            try:
+                # 将HTML转换为markdown格式
+                markdown_content = markdownify(
+                    obj.description,
+                    heading_style='ATX',  # 使用 # 格式的标题
+                    bullets='-',          # 使用 - 作为列表符号
+                    strong_mark='**',     # 使用 ** 作为粗体标记
+                    em_mark='*',          # 使用 * 作为斜体标记
+                    convert=['b', 'strong', 'i', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'a', 'img'],
+                    strip=['script', 'style']  # 移除script和style标签
+                )
+                return markdown_content.strip()
+            except Exception:
+                # 如果转换失败，返回原始HTML内容
+                return obj.description
+        return ""
     
     def get_description_html(self, obj):
         """返回转换后的HTML格式"""
