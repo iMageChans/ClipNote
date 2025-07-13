@@ -33,20 +33,13 @@ class ExerciseViewSet(viewsets.ReadOnlyModelViewSet):
     ordering = ['-created_at']  # 默认按创建时间倒序
     
     def get_serializer_class(self):
-        if self.action == 'list' or self.action == 'by_body_part' or self.action == 'recommendations':
+        if self.action in ['list', 'by_body_part', 'recommendations']:
             return ExerciseListSerializer
         return ExerciseDetailSerializer
     
     def get_queryset(self):
         """优化查询集"""
-        queryset = super().get_queryset()
-        
-        # 如果有body_part参数，添加过滤
-        body_part_slug = self.kwargs.get('body_part_slug')
-        if body_part_slug:
-            queryset = queryset.filter(body_part__slug=body_part_slug)
-            
-        return queryset
+        return super().get_queryset()
     
     def list(self, request, *args, **kwargs):
         """
@@ -60,25 +53,15 @@ class ExerciseViewSet(viewsets.ReadOnlyModelViewSet):
         """
         return super().list(request, *args, **kwargs)
     
-    def retrieve(self, request, pk=None, body_part_slug=None, exercise_slug=None):
+    def retrieve(self, request, pk=None):
         """
-        通过主键、部位slug和动作slug获取特定动作详情
+        通过主键获取特定动作详情
         """
-        queryset = self.get_queryset()
-        
-        # 如果有body_part_slug和exercise_slug，使用它们来查找
-        if body_part_slug and exercise_slug:
-            exercise = get_object_or_404(queryset, 
-                                       body_part__slug=body_part_slug, 
-                                       slug=exercise_slug)
-        else:
-            # 否则使用pk查找
-            exercise = get_object_or_404(queryset, pk=pk)
-        
+        exercise = get_object_or_404(self.get_queryset(), pk=pk)
         serializer = self.get_serializer(exercise)
         return Response(serializer.data)
     
-    @action(detail=False, url_path='by-body-part/(?P<body_part_slug>[^/.]+)')
+    @action(detail=False, url_path='body-parts/(?P<body_part_slug>[^/.]+)')
     def by_body_part(self, request, body_part_slug=None):
         """
         获取特定部位的所有动作，支持分页和搜索
@@ -106,7 +89,7 @@ class ExerciseViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
     
-    @action(detail=False, url_path='(?P<body_part_slug>[^/.]+)/recommendations')
+    @action(detail=False, url_path='body-parts/(?P<body_part_slug>[^/.]+)/recommendations')
     def recommendations(self, request, body_part_slug=None):
         """
         获取特定身体部位的推荐动作（随机8个）
@@ -125,6 +108,19 @@ class ExerciseViewSet(viewsets.ReadOnlyModelViewSet):
             'count': len(recommended_exercises),
             'recommendations': serializer.data
         })
+    
+    @action(detail=False, url_path='body-parts/(?P<body_part_slug>[^/.]+)/(?P<exercise_slug>[^/.]+)')
+    def by_body_part_and_exercise(self, request, body_part_slug=None, exercise_slug=None):
+        """
+        通过body_part_slug和exercise_slug获取特定动作详情
+        """
+        queryset = self.get_queryset()
+        exercise = get_object_or_404(queryset, 
+                                   body_part__slug=body_part_slug, 
+                                   slug=exercise_slug)
+        
+        serializer = self.get_serializer(exercise)
+        return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
     def search(self, request):
