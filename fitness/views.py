@@ -61,7 +61,40 @@ class ExerciseViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(exercise)
         return Response(serializer.data)
     
-    @action(detail=False, url_path='body-parts/(?P<body_part_slug>[^/.]+)')
+    @action(detail=False, url_path='recommendations/(?P<body_part_slug>[^/]+)')
+    def recommendations(self, request, body_part_slug=None):
+        """
+        获取特定身体部位的推荐动作（随机8个）
+        """
+        # 验证body_part是否存在
+        get_object_or_404(BodyPart, slug=body_part_slug)
+        
+        queryset = Exercise.objects.filter(body_part__slug=body_part_slug).select_related('body_part')
+        
+        # 随机选择8个动作
+        recommended_exercises = queryset.order_by('?')[:8]
+        
+        serializer = self.get_serializer(recommended_exercises, many=True)
+        return Response({
+            'body_part': body_part_slug,
+            'count': len(recommended_exercises),
+            'recommendations': serializer.data
+        })
+    
+    @action(detail=False, url_path='body-parts/(?P<body_part_slug>[^/]+)/(?P<exercise_slug>[^/]+)')
+    def by_body_part_and_exercise(self, request, body_part_slug=None, exercise_slug=None):
+        """
+        通过body_part_slug和exercise_slug获取特定动作详情
+        """
+        queryset = self.get_queryset()
+        exercise = get_object_or_404(queryset, 
+                                   body_part__slug=body_part_slug, 
+                                   slug=exercise_slug)
+        
+        serializer = self.get_serializer(exercise)
+        return Response(serializer.data)
+    
+    @action(detail=False, url_path='body-parts/(?P<body_part_slug>[^/]+)')
     def by_body_part(self, request, body_part_slug=None):
         """
         获取特定部位的所有动作，支持分页和搜索
@@ -87,39 +120,6 @@ class ExerciseViewSet(viewsets.ReadOnlyModelViewSet):
             return self.get_paginated_response(serializer.data)
         
         serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=False, url_path='body-parts/(?P<body_part_slug>[^/.]+)/recommendations')
-    def recommendations(self, request, body_part_slug=None):
-        """
-        获取特定身体部位的推荐动作（随机8个）
-        """
-        # 验证body_part是否存在
-        get_object_or_404(BodyPart, slug=body_part_slug)
-        
-        queryset = Exercise.objects.filter(body_part__slug=body_part_slug).select_related('body_part')
-        
-        # 随机选择8个动作
-        recommended_exercises = queryset.order_by('?')[:8]
-        
-        serializer = self.get_serializer(recommended_exercises, many=True)
-        return Response({
-            'body_part': body_part_slug,
-            'count': len(recommended_exercises),
-            'recommendations': serializer.data
-        })
-    
-    @action(detail=False, url_path='body-parts/(?P<body_part_slug>[^/.]+)/(?P<exercise_slug>[^/.]+)')
-    def by_body_part_and_exercise(self, request, body_part_slug=None, exercise_slug=None):
-        """
-        通过body_part_slug和exercise_slug获取特定动作详情
-        """
-        queryset = self.get_queryset()
-        exercise = get_object_or_404(queryset, 
-                                   body_part__slug=body_part_slug, 
-                                   slug=exercise_slug)
-        
-        serializer = self.get_serializer(exercise)
         return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
